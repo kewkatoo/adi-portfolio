@@ -831,9 +831,10 @@ button.cert { padding: 0; border: 0; background: none; text-align: left; font: i
     radial-gradient(ellipse at center, transparent 45%, rgba(46, 16, 101, .38) 100%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.005' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .96 0 0 0 0 .92 0 0 0 .55 -.18'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E"),
     linear-gradient(180deg, #a78bfa, var(--purple-deep));
-  background-size: 240px 240px, 100vw 100vh, 900px 900px, 100vw 100vh;
+  /* The mottling is drawn once at full-screen size (never tiled) so there are no seams. */
+  background-size: 240px 240px, 100vw 100vh, 100vw 100vh, 100vw 100vh;
   background-position: calc(var(--i) * -100vw / var(--bars)) 0;
-  background-repeat: repeat, no-repeat, repeat, no-repeat;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
   background-blend-mode: multiply, normal, normal, normal;
   will-change: transform;
 }
