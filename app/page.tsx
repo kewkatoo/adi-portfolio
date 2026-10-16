@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Lenis from "lenis";
-import { BackdropVinyl, Eq, NowListening, Sparkles, Visualizer } from "./music-ui";
+import { Eq, NowListening, Sparkles, Visualizer } from "./music-ui";
+import { Loader, PageWipe, WIPE_MS } from "./loader";
 import { MusicStats } from "./music-stats";
 import { routeMedia } from "./sound";
 
@@ -14,7 +15,6 @@ const CATEGORIES: Category[] = ["dev", "music", "ui/ux"];
 const NAME = "Aditya Achary";
 const EMAIL = "aditya.achary0909@gmail.com";
 const AVATAR = "/avatar.webp";
-const LEAVE_MS = 380;
 
 const projects: { no: string; year: string; title: string; type: string; desc: string; tags: string[]; tone: string; visual: string; image?: string; url: string; category: Category }[] = [
   { no: "01", year: "2026", title: "AI Adaptive Learning Platform", type: "ai systems / agents", desc: "A stateful learning engine that turns performance signals into an endlessly adaptive curriculum.", tags: ["React", "FastAPI", "LangGraph", "Gemini"], tone: "violet", visual: "◌", image: "/projects/learning-platform.webp", url: "https://github.com/kewkatoo/Tiered-Learning-CBSEXII", category: "dev" },
@@ -29,8 +29,9 @@ const projects: { no: string; year: string; title: string; type: string; desc: s
 
 const songs: { no: string; title: string; genre: string; year: string; cover?: string; src: string }[] = [
   { no: "01", title: "when she turned my garden golden", genre: "ghibli · piano recital", year: "2025", cover: "/covers/when-she-turned-my-garden-golden.webp", src: "/audio/when-she-turned-my-garden-golden.wav" },
-  { no: "02", title: "kiseki no hikari", genre: "j-pop", year: "2025", src: "/audio/kiseki-no-hikari.wav" },
-  { no: "03", title: "stronger than you know (remix)", genre: "progressive house", year: "2024", src: "/audio/stronger-than-you-know-remix.wav" },
+  { no: "02", title: "kiseki no hikari", genre: "j-pop", year: "2025", cover: "/covers/kiseki-no-hikari.webp", src: "/audio/kiseki-no-hikari.wav" },
+  { no: "03", title: "stronger than you know (remix)", genre: "progressive house", year: "2024", cover: "/covers/stronger-than-you-know-remix.webp", src: "/audio/stronger-than-you-know-remix.wav" },
+  { no: "04", title: "all my love – coldplay (remix)", genre: "festival edm", year: "2025", cover: "/covers/all-my-love-remix.webp", src: "/audio/all-my-love-remix.wav" },
 ];
 
 const workCopy: Record<Category, { title: string; sub: string }> = {
@@ -46,17 +47,32 @@ const highlights = [
 ];
 
 // About-page timeline, styled like a "my experience" list: logo, name, role, a "my work" toggle, dates on the right.
-type Entry = { logo: string; logoBg: "white" | "purple"; org: string; role: string; when: string; where?: string; details: string[] };
+type Entry = { logo: string; logoBg: "white" | "purple"; org: string; role: string; note?: string; when: string; where?: string; details: string[] };
 const experience: Entry[] = [
-  { logo: "/logos/ashok-leyland.png", logoBg: "white", org: "ashok leyland", role: "data analyst", when: "apr 2025 – may 2025", where: "chennai, tamil nadu", details: ["built data pipelines & recommendation systems", "94.2% recommender accuracy"] },
-  { logo: "/logos/corizo.png", logoBg: "white", org: "corizo", role: "business development associate", when: "jun 15 – jul 15", where: "bengaluru, karnataka", details: [] },
+  {
+    logo: "/logos/corizo.png", logoBg: "white", org: "corizo", role: "business development associate", when: "jun 2026 – jul 2026", where: "bengaluru, karnataka",
+    details: [
+      "managed multi-stage lead pipelines, tracking prospects from first touch through to conversion",
+      "analyzed customer conversion patterns to surface funnel drop-off points and high-intent segments",
+      "monitored sales KPIs — conversion rate, pipeline velocity and engagement — to measure performance",
+      "turned data-driven insights into optimized lead-engagement strategies that improved conversion",
+    ],
+  },
+  {
+    logo: "/logos/ashok-leyland.png", logoBg: "white", org: "ashok leyland", role: "data analyst", when: "apr 2025 – may 2025", where: "chennai, tamil nadu",
+    details: [
+      "processed, cleaned and analyzed large operational datasets using python and sql",
+      "built interactive power bi dashboards for kpi tracking and visualization",
+      "translated analytical findings into actionable insights that supported business decisions",
+    ],
+  },
 ];
 const education: Entry[] = [
-  { logo: "/logos/amrita.png", logoBg: "white", org: "amrita vishwa vidyapeetham", role: "b.tech · electronics & computer engineering", when: "ongoing", where: "amritapuri, kerala", details: ["cgpa: 8.14"] },
+  { logo: "/logos/amrita.png", logoBg: "white", org: "amrita vishwa vidyapeetham", role: "b.tech · electronics & computer engineering", note: "cgpa: 8.14", when: "oct 2022 – aug 2026", where: "amritapuri, kerala", details: [] },
 ];
-// Certificates: rendered from the PDFs in public/certs. Each card links to its official verification page.
+// Certificates: rendered from the PDFs in public/certs. Each opens in the viewer with its official verification link.
 const certifications = [
-  { slug: "google-ai-professional", title: "Google AI Professional Certificate", issuer: "Google · Coursera", date: "aug 2026", url: "/certs/google-ai-professional.pdf" },
+  { slug: "google-ai-professional", title: "Google AI Professional Certificate", issuer: "Google · Coursera", date: "aug 2026", url: "https://coursera.org/verify/professional-cert/3UE3R06GHSOU" },
   { slug: "ai-for-app-deployment", title: "AI for App Deployment", issuer: "Google · Coursera", date: "aug 2026", url: "https://coursera.org/verify/89GBTDZTC5D4" },
   { slug: "generative-ai-intro", title: "Generative AI: Introduction and Applications", issuer: "IBM · Coursera", date: "aug 2026", url: "https://coursera.org/verify/D8DXFKZNR6TP" },
   { slug: "prompt-engineering-basics", title: "Generative AI: Prompt Engineering Basics", issuer: "IBM · Coursera", date: "sep 2026", url: "https://coursera.org/verify/JCQ4SIA2YUH0" },
@@ -97,18 +113,32 @@ function StarMark() {
 }
 
 /** The illustrated portrait, cropped to its purple circle. */
-function Pfp({ className = "" }: { className?: string }) {
-  return <div className={`pfp ${className}`}><img src={AVATAR} alt={NAME} /></div>;
+// Contact-page easter egg: a sound that plays only when the portrait is clicked.
+let faceSound: HTMLAudioElement | null = null;
+const playFaceSound = () => {
+  faceSound ??= new Audio("/sfx/face-click.mp3");
+  faceSound.muted = false;
+  faceSound.volume = 1;
+  faceSound.currentTime = 0;
+  void faceSound.play().catch(() => {});
+};
+
+function Pfp({ className = "", blush = false }: { className?: string; blush?: boolean }) {
+  return <div className={`pfp ${className} ${blush ? "blushable" : ""}`} onClick={blush ? playFaceSound : undefined}>
+    <img src={AVATAR} alt={NAME} />
+    {/* Easter egg: hovering/tapping the face blushes the cheeks. Positions are the cheeks on the cropped portrait. */}
+    {blush && <><span className="blush" style={{ left: "45.5%", top: "64.7%" }} aria-hidden="true" /><span className="blush" style={{ left: "71.2%", top: "63.7%" }} aria-hidden="true" /></>}
+  </div>;
 }
 
 /** Name/headline arched over the portrait, like a retro sticker. */
-function Badge({ text, id }: { text: string; id: string }) {
-  return <div className="badge">
+function Badge({ text, id, blush = false, className = "" }: { text: string; id: string; blush?: boolean; className?: string }) {
+  return <div className={`badge ${className}`}>
     <svg className="badge-arch" viewBox="0 0 400 400" aria-hidden="true">
       <defs><path id={id} d="M 58 215 A 142 142 0 0 1 342 215" /></defs>
       <text><textPath href={`#${id}`} startOffset="50%" textAnchor="middle">{text}</textPath></text>
     </svg>
-    <Pfp className="badge-pfp" />
+    <Pfp className="badge-pfp" blush={blush} />
     <span className="sparkle s1">✦</span><span className="sparkle s2">✦</span><span className="sparkle s3">✧</span>
   </div>;
 }
@@ -126,6 +156,7 @@ function TimelineRow({ entry, label = "my work" }: { entry: Entry; label?: strin
     <div className="tl-body">
       <b>{entry.org}</b>
       <span className="tl-role">{entry.role}</span>
+      {entry.note && <span className="tl-note">{entry.note}</span>}
       {entry.details.length > 0 && <>
         <button type="button" className="tl-toggle" aria-expanded={open} onClick={() => setOpen(!open)}><i aria-hidden="true">▸</i>{label}</button>
         <div className="tl-details"><ul>{entry.details.map((line) => <li key={line}>{line}</li>)}</ul></div>
@@ -170,7 +201,10 @@ export default function Home() {
   const [section, setSection] = useState<Section>("home");
   const [category, setCategory] = useState<Category>("dev");
   const [view, setView] = useState<{ section: Section; category: Category }>({ section: "home", category: "dev" });
-  const [leaving, setLeaving] = useState(false);
+  const [wipe, setWipe] = useState<"idle" | "cover" | "reveal">("idle");
+  // Top bar wipes downward, the bottom dock wipes upward. Set by whichever bar was clicked.
+  const [wipeDir, setWipeDir] = useState<"down" | "up">("up");
+  const nextWipeDir = useRef<"down" | "up" | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
   const [lastPlayed, setLastPlayed] = useState(0);
   // Per-song position/length, plus one shared volume for every track.
@@ -178,6 +212,12 @@ export default function Home() {
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
   const [contactStatus, setContactStatus] = useState("");
+  // Intro: "playing" shows the hello loader, "revealing" while it lifts away, then "done".
+  const [intro, setIntro] = useState<"playing" | "revealing" | "done">("playing");
+  const revealIntro = useCallback(() => setIntro("revealing"), []);
+  const finishIntro = useCallback(() => setIntro("done"), []);
+  // Full-screen image viewer for the resume and certificates; downloading is an explicit button inside it.
+  const [viewer, setViewer] = useState<{ src: string; title: string; pdf: string; fileName: string; verify?: string } | null>(null);
   const [messageLength, setMessageLength] = useState(0);
   const audioRefs = useRef<Record<number, HTMLAudioElement | null>>({});
   const lenisRef = useRef<Lenis | null>(null);
@@ -202,15 +242,27 @@ export default function Home() {
 
   useEffect(() => {
     if (view.section === section && (section !== "work" || view.category === category)) return;
-    setLeaving(true);
+    // Page switch: the paper bars sweep up over the page, the new page is swapped in underneath,
+    // then the bars carry on upward to reveal it.
+    const reduced = reducedMotion();
+    // Other links (e.g. "see all work") follow the bar that owns the destination.
+    setWipeDir(nextWipeDir.current ?? (section === "work" ? "up" : "down"));
+    nextWipeDir.current = null;
+    if (!reduced) setWipe("cover");
     const timer = window.setTimeout(() => {
       setView({ section, category });
-      setLeaving(false);
       if (lenisRef.current) lenisRef.current.scrollTo(0, { immediate: true, force: true });
       else window.scrollTo(0, 0);
-    }, reducedMotion() ? 0 : LEAVE_MS);
+      if (!reduced) setWipe("reveal");
+    }, reduced ? 0 : WIPE_MS);
     return () => window.clearTimeout(timer);
   }, [section, category, view]);
+
+  useEffect(() => {
+    if (wipe !== "reveal") return;
+    const timer = window.setTimeout(() => setWipe("idle"), WIPE_MS);
+    return () => window.clearTimeout(timer);
+  }, [wipe]);
 
 
   useEffect(() => {
@@ -223,7 +275,24 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const pickCategory = (next: Category) => { setCategory(next); window.location.hash = "work"; };
+  useEffect(() => {
+    if (!viewer) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setViewer(null); };
+    window.addEventListener("keydown", onKey);
+    lenisRef.current?.stop();
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); lenisRef.current?.start(); document.body.style.overflow = ""; };
+  }, [viewer]);
+
+  // No scrolling underneath the intro.
+  useEffect(() => {
+    if (intro === "done") return;
+    lenisRef.current?.stop();
+    document.documentElement.style.overflow = "hidden";
+    return () => { lenisRef.current?.start(); document.documentElement.style.overflow = ""; };
+  }, [intro]);
+
+  const pickCategory = (next: Category) => { nextWipeDir.current = "up"; setCategory(next); window.location.hash = "work"; };
   const slide = (direction: 1 | -1) => {
     const track = carouselRef.current;
     if (track) track.scrollBy({ left: direction * (track.clientWidth / 2 + 8), behavior: "smooth" });
@@ -262,11 +331,10 @@ export default function Home() {
   return <>
     <div className="noise" />
     <Sparkles />
-    <BackdropVinyl cue={`${view.section}-${view.category}`} hidden={view.section === "home"} />
     <Visualizer />
 
     <header className="topnav">
-      <nav className="topnav-inner" aria-label="Primary">
+      <nav className="topnav-inner" aria-label="Primary" onClickCapture={() => { nextWipeDir.current = "down"; }}>
         {navLink("home")}
         {navLink("about")}
         <a href="#home" className="nav-logo" aria-label={`${NAME} — home`}><StarMark /></a>
@@ -275,7 +343,7 @@ export default function Home() {
       </nav>
     </header>
 
-    <main className={`stage ${leaving ? "is-leaving" : ""}`}>
+    <main className={`stage ${intro === "playing" ? "intro-hold" : ""}`}>
       {view.section === "home" && <section className="page" key="home">
         <p className="kicker">track 01 · home</p>
         <Badge text={NAME} id="name-arc" />
@@ -364,27 +432,27 @@ export default function Home() {
       {view.section === "resume" && <section className="page" key="resume">
         <p className="kicker">track 03 · resume</p>
         <Heading title="resume" sub="the setlist, on paper" />
-        <a className="resume-sheet" href="/resume.pdf" target="_blank" rel="noreferrer" aria-label="Open resume PDF">
+        <button type="button" className="resume-sheet" aria-label="View resume" onClick={() => setViewer({ src: "/resume-preview.webp", title: "resume", pdf: "/resume.pdf", fileName: "Aditya_Achary_Resume.pdf" })}>
           <img src="/resume-preview.webp" alt="Aditya Achary's resume" />
-        </a>
+        </button>
         <div className="actions">
-          <a className="btn btn-primary" href="/resume.pdf" target="_blank" rel="noreferrer">open full size ↗</a>
-          <a className="btn" href="/resume.pdf" download="Aditya_Achary_Resume.pdf">download pdf ↓</a>
+          <a className="btn btn-primary" href="/resume.pdf" download="Aditya_Achary_Resume.pdf">download resume ↓</a>
         </div>
 
         <div className="block">
           <Heading title="certifications" sub="courses i've completed along the way" />
-          <div className="cert-grid">{certifications.map((cert, i) => <a key={cert.slug} className="cert" href={cert.url} target="_blank" rel="noreferrer" style={{ "--n": i } as React.CSSProperties}>
+          <div className="cert-grid">{certifications.map((cert, i) => <button type="button" key={cert.slug} className="cert" aria-label={`View ${cert.title} certificate`} style={{ "--n": i } as React.CSSProperties}
+            onClick={() => setViewer({ src: `/certs/${cert.slug}.webp`, title: cert.title, pdf: `/certs/${cert.slug}.pdf`, fileName: `${cert.slug}.pdf`, verify: cert.url.startsWith("http") ? cert.url : undefined })}>
             <span className="cert-img"><img src={`/certs/${cert.slug}.webp`} alt={`${cert.title} certificate`} loading="lazy" /></span>
             <b>{cert.title}</b>
             <small>{cert.issuer} · {cert.date}</small>
-          </a>)}</div>
+          </button>)}</div>
         </div>
       </section>}
 
       {view.section === "contact" && <section className="page" key="contact">
         <p className="kicker">track 04 · contact</p>
-        <Badge text="Wanna Contact?" id="contact-arc" />
+        <Badge text="Wanna Contact?" id="contact-arc" blush className="tight" />
         <h2 className="touch">touch me</h2>
         <p className="touch-sub">if you wanna get in touch, feel free to connect with me over your preferred ways and i will get back to you :)</p>
         <div className="icon-row outline">{contactLinks.map((link) => <a className="icon-btn" key={link.label} href={link.url} aria-label={link.label} title={link.label} {...(link.url.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>{link.icon}</a>)}</div>
@@ -424,5 +492,18 @@ export default function Home() {
       {CATEGORIES.map((item) => <button type="button" key={item} className={section === "work" && category === item ? "active" : ""} aria-pressed={section === "work" && category === item} onClick={() => pickCategory(item)}>{item}{item === "music" && playing !== null && <Eq bars={3} />}</button>)}
     </nav>
 
+    {viewer && <div className="viewer" role="dialog" aria-modal="true" aria-label={viewer.title} data-lenis-prevent onClick={() => setViewer(null)}>
+      <div className="viewer-bar" onClick={(e) => e.stopPropagation()}>
+        <span>{viewer.title}</span>
+        <div>
+          {viewer.verify && <a className="btn" href={viewer.verify} target="_blank" rel="noreferrer">verify ↗</a>}
+          <a className="btn btn-primary" href={viewer.pdf} download={viewer.fileName}>download ↓</a>
+          <button type="button" className="viewer-close" aria-label="Close" onClick={() => setViewer(null)}>✕</button>
+        </div>
+      </div>
+      <div className="viewer-stage"><img src={viewer.src} alt={viewer.title} onClick={(e) => e.stopPropagation()} /></div>
+    </div>}
+    <PageWipe phase={wipe} direction={wipeDir} />
+    {intro !== "done" && <Loader onReveal={revealIntro} onDone={finishIntro} />}
   </>;
 }

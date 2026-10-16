@@ -57,34 +57,6 @@ export function Visualizer({ bars = 64 }: { bars?: number }) {
   return <div className="visualizer" ref={ref} aria-hidden="true">{Array.from({ length: bars }, (_, i) => <span key={i} />)}</div>;
 }
 
-/** A giant record spinning at the edge of the page. Every time `cue` changes it gets scratched. */
-export function BackdropVinyl({ cue, hidden }: { cue: string; hidden: boolean }) {
-  const scratchRef = useRef<HTMLDivElement>(null);
-  const first = useRef(true);
-  useEffect(() => {
-    if (first.current) { first.current = false; return; }
-    if (prefersReducedMotion()) return;
-    scratchRef.current?.animate(
-      [{ transform: "rotate(0deg)" }, { transform: "rotate(-34deg)", offset: 0.32 }, { transform: "rotate(8deg)", offset: 0.68 }, { transform: "rotate(0deg)" }],
-      { duration: 1200, easing: "cubic-bezier(.22,.8,.2,1)" },
-    );
-  }, [cue]);
-  return <div className={`bg-vinyl ${hidden ? "is-hidden" : ""}`} aria-hidden="true">
-    <div className="bg-vinyl-scratch" ref={scratchRef}>
-      <div className="bg-vinyl-disc">
-        <div className="bg-vinyl-label">
-          <svg viewBox="0 0 100 100">
-            <defs><path id="vinyl-ring" d="M50,50 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0" /></defs>
-            <text><textPath href="#vinyl-ring" textLength="222">AA · SIDE A · 33⅓ RPM · AI × MUSIC · BUILT AFTER DARK ·</textPath></text>
-            <path transform="translate(42 42) scale(.68)" d="M12 0C12.8 7 17 11.2 24 12C17 12.8 12.8 17 12 24C11.2 17 7 12.8 0 12C7 11.2 11.2 7 12 0Z" />
-          </svg>
-        </div>
-      </div>
-    </div>
-    <div className="bg-vinyl-sheen" />
-  </div>;
-}
-
 /* ─── Currently listening (Spotify via Discord, through Lanyard) ─── */
 
 type SpotifyPresence = { track_id: string | null; song: string; artist: string; album: string; album_art_url: string | null; timestamps: { start: number; end: number } };
